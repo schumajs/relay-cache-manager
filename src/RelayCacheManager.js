@@ -4,10 +4,13 @@
  * @flow
  */
 
+import CacheRecordStore from './CacheRecordStore';
 import CacheWriter from './CacheWriter';
 
 type RelayCacheManagerOptions = {
-  cacheKey?: string,
+  defaultStorageGet: () => string,
+  defaultStorageSet: (json: string) => {},
+  defaultStorageRem: () => {}
 }
 
 export default class RelayCacheManager {

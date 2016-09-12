@@ -8,33 +8,61 @@
 import CacheRecordStore from './CacheRecordStore';
 import type { CacheRecord } from './CacheRecordStore';
 
-const DEFAULT_CACHE_KEY: string = '__RelayCacheManager__';
+const DEFAULT_STORAGE: any = localStorage;
+
+const DEFAULT_STORAGE_KEY: string = '__RelayCacheManager__';
+
+function defaultStorageGet() : CacheRecordStore {
+  return DEFAULT_STORAGE.getItem(DEFAULT_STORAGE_KEY)
+}
+
+function defaultStorageSet(json: string) {
+  DEFAULT_STORAGE.setItem(DEFAULT_STORAGE_KEY, json);
+}
+
+function defaultStorageRem() {
+  DEFAULT_STORAGE.removeItem(DEFAULT_STORAGE_KEY);
+}
 
 type CacheWriterOptions = {
-  cacheKey?: string,
+  defaultStorageGet: () => string,
+  defaultStorageSet: (json: string) => {},
+  defaultStorageRem: () => {} 
 }
 
 export default class CacheWriter {
-  cache: CacheRecordStore;
-  cacheKey: string;
+  recordStore: CacheRecordStore;
+
+  defaultStorageGet: () => string;
+
+  defaultStorageSet: (json: string) => {};
+
+  defaultStorageRem: () => {};
+  
   constructor(options: CacheWriterOptions = {}) {
-    this.cacheKey = options.cacheKey || DEFAULT_CACHE_KEY
+    this.defaultStorageGet = options.defaultStorageGet || defaultStorageGet
+    this.defaultStorageSet = options.defaultStorageSet || defaultStorageSet
+    this.defaultStorageRem = options.defaultStorageRem || defaultStorageRem
+
     try {
-      let localCache = localStorage.getItem(this.cacheKey);
-      if (localCache) {
-        localCache = JSON.parse(localCache);
-        this.cache = CacheRecordStore.fromJSON(localCache);
-      } else {
-        this.cache = new CacheRecordStore();
+      this.recordStore = CacheRecordStore.fromJSON(this.defaultStorageGet());
+
+      if (!this.recordStore) {
+        this.recordStore = new CacheRecordStore();
       }
     } catch(err) {
-      this.cache = new CacheRecordStore();
+      this.recordStore = new CacheRecordStore();
     }
   }
 
   clearStorage() {
-    localStorage.removeItem(this.cacheKey);
-    this.cache = new CacheRecordStore();
+    try {
+      this.defaultStorageRem();
+    } catch (err) {
+      /* noop */
+    }
+
+    this.recordStore = new CacheRecordStore();
   }
 
   writeField(
@@ -43,7 +71,7 @@ export default class CacheWriter {
     value: ?mixed,
     typeName: ?string
   ) {
-    let record = this.cache.records[dataId];
+    let record = this.recordStore.records[dataId];
     if (!record) {
       record = {
         __dataID__: dataId,
@@ -51,22 +79,20 @@ export default class CacheWriter {
       }
     }
     record[field] = value;
-    this.cache.records[dataId] = record;
+    this.recordStore.records[dataId] = record;
     try {
-      const serialized = JSON.stringify(this.cache);
-      localStorage.setItem(this.cacheKey, serialized);
+      this.defaultStorageSet(JSON.stringify(this.recordStore));
     } catch (err) {
       /* noop */
     }
   }
 
   writeNode(dataId: string, record: CacheRecord) {
-    this.cache.writeRecord(dataId, record);
+    this.recordStore.writeRecord(dataId, record);
   }
 
   readNode(dataId: string) {
-    const record = this.cache.readNode(dataId)
-    return record;
+    return this.recordStore.readNode(dataId)
   }
 
   writeRootCall(
@@ -74,7 +100,7 @@ export default class CacheWriter {
     identifyingArgValue: string,
     dataId: string
   ) {
-    this.cache.rootCallMap[storageKey] = dataId;
+    this.recordStore.rootCallMap[storageKey] = dataId;
   }
 
   readRootCall(
@@ -82,7 +108,7 @@ export default class CacheWriter {
     callValue: string,
     callback: (error: any, value: any) => void
   ) {
-    const dataId = this.cache.rootCallMap[callName];
+    const dataId = this.recordStore.rootCallMap[callName];
     setImmediate(callback.bind(null, null, dataId));
   }
 

@@ -11,7 +11,6 @@ const cacheManager = new CacheManager();
 
 Relay.Store.getStoreData().injectCacheManager(cacheManager);
 
-
 ReactDOM.render(
   <Relay.Renderer
     environment={Relay.Store}
