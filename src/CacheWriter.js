@@ -25,9 +25,9 @@ function defaultStorageRem() {
 }
 
 type CacheWriterOptions = {
-  defaultStorageGet: () => string,
-  defaultStorageSet: (json: string) => {},
-  defaultStorageRem: () => {} 
+  storageGet: () => string,
+  storageSet: (json: string) => {},
+  storageRem: () => {}
 }
 
 export default class CacheWriter {
@@ -38,14 +38,14 @@ export default class CacheWriter {
   defaultStorageSet: (json: string) => {};
 
   defaultStorageRem: () => {};
-  
+
   constructor(options: CacheWriterOptions = {}) {
-    this.defaultStorageGet = options.defaultStorageGet || defaultStorageGet
-    this.defaultStorageSet = options.defaultStorageSet || defaultStorageSet
-    this.defaultStorageRem = options.defaultStorageRem || defaultStorageRem
+    this.storageGet = options.storageGet || defaultStorageGet
+    this.storageSet = options.storageSet || defaultStorageSet
+    this.storageRem = options.storageRem || defaultStorageRem
 
     try {
-      this.recordStore = CacheRecordStore.fromJSON(this.defaultStorageGet());
+      this.recordStore = CacheRecordStore.fromJSON(this.storageGet());
 
       if (!this.recordStore) {
         this.recordStore = new CacheRecordStore();
@@ -57,7 +57,7 @@ export default class CacheWriter {
 
   clearStorage() {
     try {
-      this.defaultStorageRem();
+      this.storageRem();
     } catch (err) {
       /* noop */
     }
@@ -81,7 +81,7 @@ export default class CacheWriter {
     record[field] = value;
     this.recordStore.records[dataId] = record;
     try {
-      this.defaultStorageSet(JSON.stringify(this.recordStore));
+      this.storageSet(JSON.stringify(this.recordStore));
     } catch (err) {
       /* noop */
     }

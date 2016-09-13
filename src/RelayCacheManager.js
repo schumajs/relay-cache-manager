@@ -8,9 +8,9 @@ import CacheRecordStore from './CacheRecordStore';
 import CacheWriter from './CacheWriter';
 
 type RelayCacheManagerOptions = {
-  defaultStorageGet: () => string,
-  defaultStorageSet: (json: string) => {},
-  defaultStorageRem: () => {}
+  storageGet: () => string,
+  storageSet: (json: string) => {},
+  storageRem: () => {}
 }
 
 export default class RelayCacheManager {
